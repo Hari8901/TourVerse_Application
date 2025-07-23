@@ -1,2 +1,10 @@
-# TourVerse_Application
-The Travel guide/pre-planned package booking system for travellers
+# Travel Guide Booking System
+
+## Tech stack
+- ReactJS frontend
+- Spring Boot microservices backend
+- MySQL + MongoDB
+- Docker, Jenkins, Terraform, Kubernetes
+
+## Monorepo structure
+See /backend, /frontend, /infra etc.

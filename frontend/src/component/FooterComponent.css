@@ -1,0 +1,34 @@
+.footer-social a {
+    color: #000000;
+    margin-right: 30px;
+    font-size: 18px;
+    transition: color 0.3s;
+}
+
+.footer-social a:hover {
+    color: orange;
+}
+
+.footer-tittle h4 {
+    margin-bottom: 15px;
+    font-weight: 600;
+}
+
+.footer-tittle ul li {
+    margin-bottom: 8px;
+}
+
+.footer-tittle ul li a {
+    color: #000000;
+    text-decoration: none;
+}
+
+.footer-tittle ul li a:hover {
+    color: orange;
+}
+
+.footer-copy-right p {
+    color: #000000;
+    font-size: 14px;
+    margin: 0;
+}

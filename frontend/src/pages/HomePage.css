@@ -1,0 +1,16 @@
+.carousel,
+.carousel-inner,
+.carousel-item,
+.d-block {
+    height: 100vh;
+    /* Make carousel fullscreen */
+}
+
+.btn-warning {
+    background-color: #FFD700;
+    color: #000;
+}
+
+.btn-warning:hover {
+    background-color: orange;
+}

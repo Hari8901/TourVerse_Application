@@ -12,12 +12,12 @@ import org.springframework.data.redis.core.*;
 public class RedisConfig {
 
 	@Bean
-	public RedisConnectionFactory redisConnectionFactory() {
+	RedisConnectionFactory redisConnectionFactory() {
 		return new LettuceConnectionFactory(); // default: localhost:6379
 	}
 
 	@Bean
-	public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory factory) {
+	RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory factory) {
 		RedisTemplate<String, Object> template = new RedisTemplate<>();
 		template.setConnectionFactory(factory);
 		return template;

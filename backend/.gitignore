@@ -1,4 +1,3 @@
-
 # BUILD & COMPILED FILES
 /target/
 build/
@@ -12,9 +11,6 @@ build/
 !**/src/main/**/build/
 !**/src/test/**/build/
 **/application-dev.properties
-
-
-
 
 # IDE & TOOLING FILES
 
@@ -62,6 +58,7 @@ Thumbs.db
 
 # SECRETS / ENVIRONMENT FILES
 .env
+application-dev.properties
 
 
 # HELP & DOC FILES (optional)

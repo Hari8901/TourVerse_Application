@@ -1,0 +1,68 @@
+
+# BUILD & COMPILED FILES
+/target/
+build/
+*.jar
+*.war
+*.ear
+
+# Ignore module-specific build folders, but keep source folders
+!**/src/main/**/target/
+!**/src/test/**/target/
+!**/src/main/**/build/
+!**/src/test/**/build/
+**/application-dev.properties
+
+
+
+
+# IDE & TOOLING FILES
+
+### Eclipse / STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings/
+.springBeans
+.sts4-cache
+
+### IntelliJ IDEA ###
+.idea/
+*.iws
+*.iml
+*.ipr
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+### VS Code ###
+.vscode/
+
+
+# MAVEN WRAPPER & SETTINGS
+.mvn/
+.mvn/wrapper/maven-wrapper.jar
+mvnw
+mvnw.cmd
+
+
+# LOG FILES & TEMP FILES
+*.log
+
+
+# SYSTEM & OS FILES
+.DS_Store
+Thumbs.db
+
+
+# SECRETS / ENVIRONMENT FILES
+.env
+
+
+# HELP & DOC FILES (optional)
+HELP.md

@@ -1,6 +1,7 @@
 package com.tourverse.backend.auth.service;
 
 import com.tourverse.backend.auth.util.JwtUtil;
+import com.tourverse.backend.common.util.AppConstants;
 import com.tourverse.backend.user.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -17,9 +18,7 @@ public class JwtTokenService {
 
 	private final JwtUtil jwtUtil;
 	private final RedisTemplate<String, Object> redisTemplate;
-	private final UserDetailsService userDetailsService; // Added for validation
-
-	private static final String BLACKLIST_PREFIX = "BLACKLISTED_TOKEN:";
+	private final UserDetailsService userDetailsService;
 
 	public String generateToken(User user) {
 		return jwtUtil.generateToken(user);
@@ -54,7 +53,7 @@ public class JwtTokenService {
 
 	public boolean isTokenBlacklisted(String token) {
 		// No changes needed here, this is correct
-		return redisTemplate.opsForValue().get(BLACKLIST_PREFIX + token) != null;
+		return redisTemplate.opsForValue().get(AppConstants.BLACKLIST_PREFIX + token) != null;
 	}
 
 	public void blacklistToken(String token) {
@@ -62,7 +61,8 @@ public class JwtTokenService {
 		Date expiration = jwtUtil.extractExpiration(token);
 		long durationMillis = expiration.getTime() - System.currentTimeMillis();
 		if (durationMillis > 0) {
-			redisTemplate.opsForValue().set(BLACKLIST_PREFIX + token, true, durationMillis, TimeUnit.MILLISECONDS);
+			redisTemplate.opsForValue().set(AppConstants.BLACKLIST_PREFIX + token, true, durationMillis,
+					TimeUnit.MILLISECONDS);
 		}
 	}
 }

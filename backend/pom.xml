@@ -142,8 +142,14 @@
       <optional>true</optional>
     </dependency>
     
-    
-    <!-- redis cache based register/login to avoid memory leak and store otp without DB-->
+    <!-- Razorpay for payment -->
+    <dependency>
+     <groupId>com.razorpay</groupId>
+     <artifactId>razorpay-java</artifactId>
+     <version>1.4.3</version> 
+    </dependency>
+
+		<!-- redis cache based register/login to avoid memory leak and store otp without DB-->
     <dependency>
      <groupId>org.springframework.boot</groupId>
      <artifactId>spring-boot-starter-data-redis</artifactId>

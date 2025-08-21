@@ -1,6 +1,8 @@
 package com.tourverse.backend.guide.controller;
 
+import com.tourverse.backend.auth.dto.ChangePasswordRequest;
 import com.tourverse.backend.auth.dto.OtpRequest;
+import com.tourverse.backend.auth.dto.OtpVerificationRequest;
 import com.tourverse.backend.auth.dto.ResetPasswordRequest;
 import com.tourverse.backend.auth.util.UserPrincipal;
 import com.tourverse.backend.guide.dto.GuideDto;
@@ -9,6 +11,7 @@ import com.tourverse.backend.guide.dto.GuideRegisterRequest;
 import com.tourverse.backend.guide.dto.GuideUpdateRequest;
 import com.tourverse.backend.guide.service.GuideAuthService;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -35,12 +38,15 @@ public class GuideAuthController {
 		return ResponseEntity.ok("Guide registration successful. Please login.");
 	}
 
-	@PostMapping("/login")
-	public ResponseEntity<?> login(@RequestBody GuideLoginRequest req) {
-		String jwt = guideAuthService.login(req);
-		if (jwt == null) {
-			return ResponseEntity.accepted().body("OTP sent; re-submit request with OTP to complete login.");
-		}
+	@PostMapping("/login/init")
+	public ResponseEntity<String> loginInit(@RequestBody GuideLoginRequest req) {
+		guideAuthService.loginInit(req);
+		return ResponseEntity.accepted().body("OTP sent; re-submit request with OTP to complete login.");
+	}
+
+	@PostMapping("/login/verify")
+	public ResponseEntity<String> loginVerify(@RequestBody OtpVerificationRequest req) {
+		String jwt = guideAuthService.loginVerify(req);
 		return ResponseEntity.ok(jwt);
 	}
 
@@ -58,8 +64,15 @@ public class GuideAuthController {
 
 	@PostMapping("/reset-password")
 	public ResponseEntity<String> resetPassword(@RequestBody ResetPasswordRequest req) {
-		guideAuthService.resetPassword(req.getEmail(), req.getNewPassword(), req.getOldPassword(), req.getOtp());
+		guideAuthService.resetPassword(req.getEmail(), req.getNewPassword(), req.getOtp());
 		return ResponseEntity.ok("Password reset successful.");
+	}
+
+	@PostMapping("/profile/change-password")
+	public ResponseEntity<String> changePassword(@Valid @RequestBody ChangePasswordRequest req, Authentication auth) {
+		UserPrincipal principal = (UserPrincipal) auth.getPrincipal();
+		guideAuthService.changePassword(principal.getUser().getId(), req);
+		return ResponseEntity.ok("Password changed successfully.");
 	}
 
 	// --- PROFILE & DASHBOARD ENDPOINTS ---

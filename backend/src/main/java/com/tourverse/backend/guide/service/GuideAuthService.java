@@ -1,8 +1,11 @@
 package com.tourverse.backend.guide.service;
 
+import com.tourverse.backend.auth.dto.ChangePasswordRequest;
+import com.tourverse.backend.auth.dto.OtpVerificationRequest;
 import com.tourverse.backend.auth.service.EmailService;
 import com.tourverse.backend.auth.service.JwtTokenService;
 import com.tourverse.backend.auth.service.OtpService;
+import com.tourverse.backend.common.exceptions.UserNotFoundException;
 import com.tourverse.backend.guide.dto.GuideDto;
 import com.tourverse.backend.guide.dto.GuideLoginRequest;
 import com.tourverse.backend.guide.dto.GuideRegisterRequest;
@@ -87,22 +90,19 @@ public class GuideAuthService {
 
 	// --- LOGIN & LOGOUT ---
 
-	public String login(GuideLoginRequest req) {
+	public void loginInit(GuideLoginRequest req) {
 		authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(req.getEmail(), req.getPassword()));
 
-		if (req.getOtp() == null || req.getOtp().isBlank()) {
-			String otp = otpService.generateOtp(req.getEmail());
-			emailService.sendOtpEmail(req.getEmail(), otp, "Your TourVerse Login OTP");
-			return null;
-		}
+		String otp = otpService.generateOtp(req.getEmail());
+		emailService.sendOtpEmail(req.getEmail(), otp, "Your TourVerse Login OTP");
+	}
 
+	public String loginVerify(OtpVerificationRequest req) {
 		if (!otpService.validateOtp(req.getEmail(), req.getOtp())) {
 			throw new BadCredentialsException("Invalid OTP.");
 		}
-
 		User user = userRepository.findByEmail(req.getEmail())
 				.orElseThrow(() -> new UsernameNotFoundException("User not found."));
-
 		otpService.clearOtp(req.getEmail());
 		return jwtTokenService.generateToken(user);
 	}
@@ -123,23 +123,28 @@ public class GuideAuthService {
 	}
 
 	@Transactional
-	public void resetPassword(String email, String newPassword, String oldPassword, String otp) {
+	public void resetPassword(String email, String newPassword, String otp) {
 		User user = userRepository.findByEmail(email)
 				.orElseThrow(() -> new UsernameNotFoundException("User not found."));
-
-		if (oldPassword != null && !oldPassword.isBlank()) {
-			if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
-				throw new BadCredentialsException("Incorrect old password.");
-			}
-		} else if (otp != null && !otp.isBlank()) {
-			if (!otpService.validateOtp(email, otp)) {
-				throw new BadCredentialsException("Invalid or expired OTP.");
-			}
-			otpService.clearOtp(email);
-		} else {
-			throw new IllegalArgumentException("Provide old password or OTP.");
+		if (!otpService.validateOtp(email, otp)) {
+			throw new BadCredentialsException("Invalid or expired OTP.");
 		}
+		
 		user.setPassword(passwordEncoder.encode(newPassword));
+		userRepository.save(user);
+		otpService.clearOtp(email);
+	}
+	
+	@Transactional
+	public void changePassword(Long userId, ChangePasswordRequest req) {
+		User user = userRepository.findById(userId)
+				.orElseThrow(() -> new UserNotFoundException("User not found with ID: " + userId));
+
+		if (!passwordEncoder.matches(req.getOldPassword(), user.getPassword())) {
+			throw new BadCredentialsException("Incorrect old password.");
+		}
+
+		user.setPassword(passwordEncoder.encode(req.getNewPassword()));
 		userRepository.save(user);
 	}
 
@@ -147,13 +152,15 @@ public class GuideAuthService {
 
 	@Transactional(readOnly = true)
 	public GuideDto getDashboard(Long userId) {
-		Guide guide = guideRepository.findById(userId).orElseThrow(() -> new RuntimeException("Guide not found"));
+		Guide guide = guideRepository.findById(userId)
+				.orElseThrow(() -> new UserNotFoundException("Guide not found with ID: " + userId));
 		return convertToDto(guide);
 	}
 
 	@Transactional
 	public GuideDto updateProfile(Long userId, GuideUpdateRequest req) {
-		Guide guide = guideRepository.findById(userId).orElseThrow(() -> new RuntimeException("Guide not found"));
+		Guide guide = guideRepository.findById(userId)
+				.orElseThrow(() -> new UserNotFoundException("Guide not found with ID: " + userId));
 
 		if (req.getName() != null)
 			guide.setName(req.getName());
@@ -180,7 +187,7 @@ public class GuideAuthService {
 	@Transactional
 	public void deleteGuide(Long userId) {
 		if (!guideRepository.existsById(userId)) {
-			throw new RuntimeException("Guide not found");
+			throw new UserNotFoundException("Guide not found with ID: " + userId);
 		}
 		guideRepository.deleteById(userId);
 	}

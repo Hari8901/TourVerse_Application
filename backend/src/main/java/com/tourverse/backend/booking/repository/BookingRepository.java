@@ -13,4 +13,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
 	// Find bookings for a specific guide
 	List<Booking> findByGuideId(Long guideId);
+
+	// Find pending bookings in a specific location for guides to view
+	List<Booking> findByLocationAndStatus(String location, Booking.BookingStatus status);
 }

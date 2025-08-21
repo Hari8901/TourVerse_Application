@@ -1,8 +1,12 @@
 package com.tourverse.backend.user.service;
 
+import com.tourverse.backend.auth.dto.ChangePasswordRequest;
+import com.tourverse.backend.auth.dto.OtpVerificationRequest;
+import com.tourverse.backend.auth.dto.ResetPasswordRequest;
 import com.tourverse.backend.auth.service.EmailService;
 import com.tourverse.backend.auth.service.JwtTokenService;
 import com.tourverse.backend.auth.service.OtpService;
+import com.tourverse.backend.common.exceptions.UserNotFoundException;
 import com.tourverse.backend.user.dto.TravelerDto;
 import com.tourverse.backend.user.dto.TravelerLoginRequest;
 import com.tourverse.backend.user.dto.TravelerRegisterRequest;
@@ -15,7 +19,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,13 +37,87 @@ public class TravelerAuthService {
 	private final AuthenticationManager authenticationManager;
 	private final JwtTokenService jwtTokenService;
 
+	// --- PASSWORD MANAGEMENT ---
+
+	public void sendPasswordResetOtp(String email) {
+		userRepository.findByEmail(email)
+				.orElseThrow(() -> new UserNotFoundException("User not found with email: " + email));
+		String otp = otpService.generateOtp(email);
+		emailService.sendOtpEmail(email, otp, "Your TourVerse Password Reset OTP");
+	}
+
+	@Transactional
+	public void resetPasswordWithOtp(ResetPasswordRequest req) {
+		User user = userRepository.findByEmail(req.getEmail())
+				.orElseThrow(() -> new UserNotFoundException("User not found with email: " + req.getEmail()));
+
+		if (!otpService.validateOtp(req.getEmail(), req.getOtp())) {
+			throw new BadCredentialsException("Invalid or expired OTP.");
+		}
+
+		user.setPassword(passwordEncoder.encode(req.getNewPassword()));
+		userRepository.save(user);
+		otpService.clearOtp(req.getEmail());
+	}
+
+	@Transactional
+	public void changePassword(Long userId, ChangePasswordRequest req) {
+		User user = userRepository.findById(userId)
+				.orElseThrow(() -> new UserNotFoundException("User not found with ID: " + userId));
+
+		if (!passwordEncoder.matches(req.getOldPassword(), user.getPassword())) {
+			throw new BadCredentialsException("Incorrect old password.");
+		}
+
+		user.setPassword(passwordEncoder.encode(req.getNewPassword()));
+		userRepository.save(user);
+	}
+
+	// --- Profile Management ---
+
+	@Transactional(readOnly = true)
+	public TravelerDto getDashboard(Long userId) {
+		Traveler traveler = travelerRepository.findById(userId)
+				.orElseThrow(() -> new UserNotFoundException("Traveler not found with ID: " + userId));
+		return convertToDto(traveler);
+	}
+
+	@Transactional
+	public TravelerDto updateProfile(Long userId, TravelerUpdateRequest req) {
+		Traveler traveler = travelerRepository.findById(userId)
+				.orElseThrow(() -> new UserNotFoundException("Traveler not found with ID: " + userId));
+
+		if (req.getName() != null)
+			traveler.setName(req.getName());
+		if (req.getPhone() != null)
+			traveler.setPhone(req.getPhone());
+
+		if (req.getProfilePicture() != null && !req.getProfilePicture().isEmpty()) {
+			String url = s3FileUploadService.uploadFile(req.getProfilePicture());
+			traveler.setProfilePictureUrl(url);
+		}
+
+		travelerRepository.save(traveler);
+		return convertToDto(traveler);
+	}
+
+	@Transactional
+	public void deleteProfile(Long userId) {
+		if (!travelerRepository.existsById(userId)) {
+			throw new UserNotFoundException("Traveler not found with ID: " + userId);
+		}
+		travelerRepository.deleteById(userId);
+	}
+
 	// --- REGISTRATION ---
 
 	@Transactional
 	public void initiateRegistration(TravelerRegisterRequest req) {
+		// Bean validation (@Valid) handles all field validation automatically
 		if (userRepository.existsByEmail(req.getEmail())) {
 			throw new IllegalArgumentException("Email is already registered.");
 		}
+		
 		String otp = otpService.generateOtp(req.getEmail());
 		emailService.sendOtpEmail(req.getEmail(), otp, "Complete Your TourVerse Registration");
 	}
@@ -66,22 +143,18 @@ public class TravelerAuthService {
 
 	// --- LOGIN & LOGOUT ---
 
-	public String login(TravelerLoginRequest req) {
+	public void loginInit(TravelerLoginRequest req) {
 		authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(req.getEmail(), req.getPassword()));
+		String otp = otpService.generateOtp(req.getEmail());
+		emailService.sendOtpEmail(req.getEmail(), otp, "Your TourVerse Login OTP");
+	}
 
-		if (req.getOtp() == null || req.getOtp().isBlank()) {
-			String otp = otpService.generateOtp(req.getEmail());
-			emailService.sendOtpEmail(req.getEmail(), otp, "Your TourVerse Login OTP");
-			return null;
-		}
-
+	public String loginVerify(OtpVerificationRequest req) {
 		if (!otpService.validateOtp(req.getEmail(), req.getOtp())) {
-			throw new BadCredentialsException("Invalid OTP.");
+			throw new BadCredentialsException("Invalid or expired OTP.");
 		}
-
 		User user = userRepository.findByEmail(req.getEmail())
-				.orElseThrow(() -> new UsernameNotFoundException("User not found."));
-
+				.orElseThrow(() -> new UserNotFoundException("User not found with email: " + req.getEmail()));
 		otpService.clearOtp(req.getEmail());
 		return jwtTokenService.generateToken(user);
 	}
@@ -91,71 +164,6 @@ public class TravelerAuthService {
 			String token = authHeader.substring(7);
 			jwtTokenService.blacklistToken(token);
 		}
-	}
-
-	// --- PASSWORD MANAGEMENT ---
-
-	public void sendPasswordResetOtp(String email) {
-		userRepository.findByEmail(email).orElseThrow(() -> new UsernameNotFoundException("User not found."));
-		String otp = otpService.generateOtp(email);
-		emailService.sendOtpEmail(email, otp, "Your TourVerse Password Reset OTP");
-	}
-
-	@Transactional
-	public void resetPassword(String email, String newPassword, String oldPassword, String otp) {
-		User user = userRepository.findByEmail(email)
-				.orElseThrow(() -> new UsernameNotFoundException("User not found."));
-
-		if (oldPassword != null && !oldPassword.isBlank()) {
-			if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
-				throw new BadCredentialsException("Incorrect old password.");
-			}
-		} else if (otp != null && !otp.isBlank()) {
-			if (!otpService.validateOtp(email, otp)) {
-				throw new BadCredentialsException("Invalid or expired OTP.");
-			}
-			otpService.clearOtp(email);
-		} else {
-			throw new IllegalArgumentException("Provide old password or OTP.");
-		}
-		user.setPassword(passwordEncoder.encode(newPassword));
-		userRepository.save(user);
-	}
-
-	// --- PROFILE MANAGEMENT ---
-
-	@Transactional(readOnly = true)
-	public TravelerDto getDashboard(Long userId) {
-		Traveler traveler = travelerRepository.findById(userId)
-				.orElseThrow(() -> new RuntimeException("Traveler not found"));
-		return convertToDto(traveler);
-	}
-
-	@Transactional
-	public TravelerDto updateProfile(Long userId, TravelerUpdateRequest req) {
-		Traveler traveler = travelerRepository.findById(userId)
-				.orElseThrow(() -> new RuntimeException("Traveler not found"));
-
-		if (req.getName() != null)
-			traveler.setName(req.getName());
-		if (req.getPhone() != null)
-			traveler.setPhone(req.getPhone());
-
-		if (req.getProfilePicture() != null && !req.getProfilePicture().isEmpty()) {
-			String url = s3FileUploadService.uploadFile(req.getProfilePicture());
-			traveler.setProfilePictureUrl(url);
-		}
-
-		travelerRepository.save(traveler);
-		return convertToDto(traveler);
-	}
-
-	@Transactional
-	public void deleteProfile(Long userId) {
-		if (!travelerRepository.existsById(userId)) {
-			throw new RuntimeException("Traveler not found");
-		}
-		travelerRepository.deleteById(userId);
 	}
 
 	// --- UTILITY METHODS ---

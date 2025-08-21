@@ -13,5 +13,10 @@ public interface GuideRepository extends JpaRepository<Guide, Long> {
 
 	List<Guide> findByVerificationStatus(Guide.VerificationStatus status);
 
-	List<Guide> findAllByIdInAndLocationAndLanguagesContaining(List<Long> ids, String location, String language);
+	// Updated to fetch only approved guides
+	List<Guide> findAllByIdInAndLocationAndLanguagesContainingAndVerificationStatus(List<Long> ids, String location,
+			String language, Guide.VerificationStatus verificationStatus);
+
+	// For the booking service to find approved guides in a location
+	List<Guide> findByLocationAndVerificationStatus(String location, Guide.VerificationStatus verificationStatus);
 }

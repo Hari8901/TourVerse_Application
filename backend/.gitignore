@@ -39,27 +39,26 @@ build/
 ### VS Code ###
 .vscode/
 
-
 # MAVEN WRAPPER & SETTINGS
 .mvn/
 .mvn/wrapper/maven-wrapper.jar
 mvnw
 mvnw.cmd
 
-
 # LOG FILES & TEMP FILES
 *.log
-
 
 # SYSTEM & OS FILES
 .DS_Store
 Thumbs.db
 
-
 # SECRETS / ENVIRONMENT FILES
 .env
 application-dev.properties
 
-
 # HELP & DOC FILES (optional)
 HELP.md
+
+# KEEP SETUP SCRIPTS
+!setup.sh
+!setup.bat

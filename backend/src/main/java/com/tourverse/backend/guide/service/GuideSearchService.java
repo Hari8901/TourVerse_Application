@@ -44,15 +44,13 @@ public class GuideSearchService {
                 .collect(Collectors.toMap(AvailabilitySlot::getGuideId, AvailabilitySlot::getSlots));
 
         // Step 2: Fetch the full profiles of the available guides from MySQL,
-        // filtering by location and language.
-        List<Guide> matchingGuides = guideRepository.findAllByIdInAndLocationAndLanguagesContaining(
-                availableGuideIds, location, language
+        // filtering by location, language, and ensuring they are approved.
+        List<Guide> matchingGuides = guideRepository.findAllByIdInAndLocationAndLanguagesContainingAndVerificationStatus(
+                availableGuideIds, location, language, Guide.VerificationStatus.APPROVED
         );
 
         // Step 3: Combine the profile and availability info into the final DTO.
         return matchingGuides.stream()
-                // Only include guides who are fully approved.
-                .filter(guide -> guide.getVerificationStatus() == Guide.VerificationStatus.APPROVED)
                 .map(guide -> convertToSearchResultDto(guide, slotMap.get(guide.getId())))
                 .collect(Collectors.toList());
     }

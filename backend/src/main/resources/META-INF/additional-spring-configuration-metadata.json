@@ -58,5 +58,15 @@
     "name": "razorpay.api.key-secret",
     "type": "java.lang.String",
     "description": "A description for 'razorpay.api.key-secret'"
+  },
+  {
+    "name": "app.cors.allowed-origins",
+    "type": "java.lang.String",
+    "description": "A description for 'app.cors.allowed-origins'"
+  },
+  {
+    "name": "file.upload.max-size",
+    "type": "java.lang.String",
+    "description": "A description for 'file.upload.max-size'"
   }
 ]}

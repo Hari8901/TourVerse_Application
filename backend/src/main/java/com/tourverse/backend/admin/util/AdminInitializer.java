@@ -17,7 +17,7 @@ public class AdminInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        // Check if an admin user already exists to prevent creating duplicates
+    	
         if (!userRepository.existsByEmail("admin@tourverse.com")) {
             Admin admin = Admin.builder()
                     .name("Super Admin")

@@ -4,9 +4,11 @@ import com.tourverse.backend.user.entity.User;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.Builder;
-import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 
 import java.math.BigDecimal;
@@ -14,20 +16,21 @@ import java.util.Collections;
 import java.util.List;
 
 @Entity
-@Table(name = "guides", uniqueConstraints = { @UniqueConstraint(columnNames = "aadhaar_no"),
-		@UniqueConstraint(columnNames = "pan_no") })
-@Data
+@Table(name = "guides")
+@Getter
+@Setter
+@ToString
+@EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
 @SuperBuilder
-@EqualsAndHashCode(callSuper = true)
 public class Guide extends User {
 
-	@Column(name = "aadhaar_no", nullable = false, length = 12)
+	@Column(name = "aadhaar_no", unique = true, nullable = false, length = 12)
 	@Size(min = 12, max = 12, message = "Aadhaar number must be exactly 12 digits")
 	@NotBlank(message = "Aadhaar number is required")
 	private String aadhaarNumber;
 
-	@Column(name = "pan_no", nullable = false, length = 10)
+	@Column(name = "pan_no", unique = true, nullable = false, length = 10)
 	@Size(min = 10, max = 10, message = "PAN number must be exactly 10 characters")
 	@NotBlank(message = "PAN number is required")
 	private String panNumber;
@@ -51,7 +54,9 @@ public class Guide extends User {
 	@NotBlank(message = "Location is required")
 	private String location;
 
-	public enum VerificationStatus { PENDING, APPROVED, REJECTED }
+	public enum VerificationStatus {
+		PENDING, APPROVED, REJECTED
+	}
 
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false)

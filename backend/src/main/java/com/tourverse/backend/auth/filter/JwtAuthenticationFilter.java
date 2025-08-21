@@ -19,8 +19,10 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @RequiredArgsConstructor
+@Slf4j
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
 	private final JwtUtil jwtUtil;
@@ -42,9 +44,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
 		jwt = authHeader.substring(7);
 
-		// Check if the token is blacklisted before proceeding
 		if (jwtTokenService.isTokenBlacklisted(jwt)) {
-			// You could send an unauthorized response here as well
 			filterChain.doFilter(request, response);
 			return;
 		}
@@ -63,8 +63,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 				}
 			}
 		} catch (Exception ex) {
-			// Log the exception details
-			logger.error("Could not set user authentication in security context", ex);
+			log.error("Could not set user authentication in security context", ex);
 		}
 
 		filterChain.doFilter(request, response);

@@ -21,4 +21,5 @@ public class BookingResponse {
 	private int hours;
 	private BigDecimal totalAmount;
 	private Booking.BookingStatus status;
+	private String location;
 }
